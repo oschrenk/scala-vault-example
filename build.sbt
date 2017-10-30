@@ -4,13 +4,6 @@ version := "0.1.0"
 
 scalaVersion := "2.11.11"
 
-libraryDependencies ++= Seq(
-  "io.circe" %% "circe-core",
-  "io.circe" %% "circe-generic",
-  "io.circe" %% "circe-java8",
-  "io.circe" %% "circe-parser"
-).map(_ % "0.8.0")
-
 // for janstenpickle.vault
 resolvers += Resolver.bintrayRepo("janstenpickle", "maven")
 // for transitive dependencies uscala:* of janstenpickle.vault
