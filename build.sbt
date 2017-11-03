@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "janstenpickle.vault" %% "vault-core" % "0.4.0",
+  "com.bettercloud" % "vault-java-driver" % "3.0.0",
   "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 )
 

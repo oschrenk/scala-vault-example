@@ -2,17 +2,10 @@ package com.oschrenk.fort
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.{Config => TypesafeConfig}
-import janstenpickle.vault.core.VaultConfig
-import janstenpickle.vault.core.WSClient
-import janstenpickle.vault.core.Secrets
 
 import com.typesafe.scalalogging.LazyLogging
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import java.net.URL
-
-import uscala.result.Result.{Fail, Ok}
+import com.bettercloud.vault.Vault
+import com.bettercloud.vault.VaultConfig
 
 object Fort {
 
@@ -20,21 +13,22 @@ object Fort {
     println("Hello World")
     println(Config.vault.address)
     println(Config.appSecret)
-
   }
-
 }
 
 class VaultFallbackConfig(val config: TypesafeConfig) extends LazyLogging {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  lazy private val SecretBackend = "secret"
-  lazy private val timeout = 10.seconds
+  val RetryCount = 5
+  val RetryOffsetMilliseconds = 1000
 
   lazy val address = config.getString("vault.address")
   lazy val token = config.getString("vault.token")
-  lazy val vaultConfig = VaultConfig(WSClient(new URL(address)), token)
-  lazy val secrets = Secrets(vaultConfig, SecretBackend)
+  lazy val vaultConfig = new VaultConfig()
+    .address(address)
+    .token(token)
+    .build()
+  lazy val vault = new Vault(vaultConfig)
 
   def getString(localKey: String, vaultKey: String, vaultSubKey: String) = {
     if (config.hasPath(localKey)) {
@@ -42,13 +36,11 @@ class VaultFallbackConfig(val config: TypesafeConfig) extends LazyLogging {
       config.getString(localKey)
     } else {
       logger.info(s"Loading from vault $vaultKey/$vaultSubKey")
-      val secretsFuture = secrets.get(vaultKey, vaultSubKey).underlying
-      val response = Await.result(secretsFuture, timeout)
-      response match {
-        case Ok(ok) => ok
-        case Fail(fail) => new IllegalArgumentException(s"Got $fail from $address for $vaultKey $vaultSubKey")
+      val response = vault.withRetries(RetryCount, RetryOffsetMilliseconds)
+        .logical()
+        .read(s"secret/$vaultKey")
+       response.getData.get(vaultSubKey)
       }
-    }
   }
 }
 
@@ -56,9 +48,6 @@ object Config {
   private val config = ConfigFactory.load()
   val vault = new VaultFallbackConfig(config)
 
-  val appSecret = vault.getString("app_secret", "service/app", "password")
-
-  // once config is initialized, close http to vault
-  dispatch.Http.shutdown()
+  val appSecret = vault.getString("app_secret", "app", "password")
 }
 
