@@ -4,11 +4,6 @@ version := "0.1.0"
 
 scalaVersion := "2.11.11"
 
-// for janstenpickle.vault
-resolvers += Resolver.bintrayRepo("janstenpickle", "maven")
-// for transitive dependencies uscala:* of janstenpickle.vault
-resolvers +=  Resolver.jcenterRepo
-
 libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "3.7.0",
   "com.typesafe" % "config" % "1.3.2",
